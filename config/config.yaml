@@ -1,0 +1,28 @@
+uvicorn:
+  host: ${oc.env:API_IP, 0.0.0.0}
+  port: ${oc.env:API_PORT, 8100}
+  reload: True
+  app: app:app
+
+setting:
+  file_path: /home/egor/programm/novisp_ml_service/data
+  prediction_device: cuda:2
+
+models:
+  segmentation:
+    _target_: histomark_lib.torch_lib.models.SMPModel
+    encoder_weights: imagenet
+    in_channels: 3
+    model_name: segformer
+    encoder_name: mit_b3
+    classes: 2
+    checkpoint_path: /home/egor/programm/histomark_new_template/histomark/logs/train/runs/2025-02-27_16-27-50/checkpoints/clear_model_epoch:029-val_loss:0.0160-val_fbeta:0.9861-val_IoU:0.9688-val_AucROC:0.9893.ckpt
+
+  invasion:
+    _target_: histomark_lib.torch_lib.models.SMPModel
+    encoder_weights: imagenet
+    in_channels: 3
+    model_name: segformer
+    encoder_name: timm-efficientnet-b3
+    classes: 1
+    checkpoint_path: /home/egor/programm/histomark_new_template/histomark/logs/train/runs/2025-02-10_17-31-05/checkpoints/clear_model_epoch:021-val_loss:0.1564-val_fbeta:0.9112-val_IoU:0.8368-val_AucROC:0.9844.ckpt
