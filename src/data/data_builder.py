@@ -8,7 +8,3 @@ class DataBuilder(ABC):
     @abstractmethod
     def build(self) -> DataLoader:
         raise NotImplementedError()
-
-    @abstractmethod
-    def grid(self):
-        raise NotImplementedError()

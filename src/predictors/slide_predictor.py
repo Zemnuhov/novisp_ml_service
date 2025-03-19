@@ -20,8 +20,8 @@ class SlidePredictor(Predictor):
     def __init__(
         self, vessels_model: Model, invasion_model: Model, device: str = "cpu"
     ):
-        self.vessels_model = vessels_model
-        self.invasion_model = invasion_model
+        self.vessels_model = vessels_model.eval().to(device)
+        self.invasion_model = invasion_model.eval().to(device)
         self.device = device
         self.segmentation_transforms = [
             albumentations.Resize(width=512, height=512),

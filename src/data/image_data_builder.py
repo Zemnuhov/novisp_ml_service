@@ -2,7 +2,7 @@ import enum
 from pathlib import Path
 from typing import List, Optional
 from src.data.data_builder import DataBuilder
-from src.data.image_dataset import ImageDataset
+from src.data.image_dataset import ImageDataset, CollectionDataset
 from torch.utils.data.dataloader import DataLoader
 from histoprocess._presentation.image.image_inference_collection import (
     ImageInferenceCollection,
@@ -27,9 +27,9 @@ class ImageDataBuilder(DataBuilder):
         is_fill_without_mask=False,
         is_fill_without_tissue=False,
     ):
-        self._grid = self._generate_grid(grid_type, image_path, wsa_path)
+        self.grid = self._generate_grid(grid_type, image_path, wsa_path)
         collection = ImageInferenceCollection.init(
-            grid=self._grid,
+            grid=self.grid,
             image_path=str(image_path),
             is_fill_without_tissue=is_fill_without_tissue,
             is_fill_without_mask=is_fill_without_mask,
@@ -39,21 +39,17 @@ class ImageDataBuilder(DataBuilder):
                 else None
             ),
         )
-        self.patches = [patch for patch in collection.get_patches_iterator()]
-        self.images = [patch.tile for patch in self.patches]
-        self.dataset = ImageDataset(image=self.images)
+        patches = [patch for patch in collection.get_patches_iterator()]
+        images = [patch.tile for patch in patches]
+        self.dataset = ImageDataset(image=images)
 
     def build(self):
         return DataLoader(
             dataset=self.dataset,
-            num_workers=30,
-            batch_size=10,
-            pin_memory=False,
+            num_workers=0,
+            batch_size=1,
+            pin_memory=True,
         )
-
-    @property
-    def grid(self):
-        return self._grid
 
     def _generate_grid(
         self,
@@ -77,3 +73,6 @@ class ImageDataBuilder(DataBuilder):
                 percentage_mask_in_tile=0.1,
             )
         )
+
+    def __len__(self):
+        return len(self.dataset)

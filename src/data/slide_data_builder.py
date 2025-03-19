@@ -6,7 +6,7 @@ from histoprocess import InjectionSetting
 from histoprocess._presentation.collections import RuntimeCollection
 from histoprocess._presentation.grid_feature import GridFeature
 from src.data.data_builder import DataBuilder
-from src.data.image_dataset import ImageDataset, CollectionDataset
+from src.data.image_dataset import CollectionDataset
 from torch.utils.data.dataloader import DataLoader
 from histoprocess.transforms import PatchTransformer
 
@@ -47,10 +47,10 @@ class SlideDataBuilder(DataBuilder):
     def build(self):
         return DataLoader(
             dataset=self.dataset,
-            num_workers=25,
+            num_workers=10,
             batch_size=2,
             pin_memory=True,
-            persistent_workers=True
+            prefetch_factor=5,
         )
 
     @property
@@ -72,17 +72,20 @@ class SlideDataBuilder(DataBuilder):
                 percentage_tissue_in_tile=0.2,
             )
             if grid_type == GridType.FULL
-            else GridFeature.init().get_bbox_grid(
-                wsi_path=str(wsi_path),
-                wsa_path=str(wsa_path),
-                level=0,
-                padding_percentage=0.7
-            ) if grid_type == GridType.BBOX
-            else GridFeature.init().get_annotation_grid(
-                wsi_path=str(wsi_path),
-                wsa_path=str(wsa_path),
-                level=0,
-                patch_size={"pixel": (256, 256)},
-                overlap=64
+            else (
+                GridFeature.init().get_bbox_grid(
+                    wsi_path=str(wsi_path),
+                    wsa_path=str(wsa_path),
+                    level=0,
+                    padding_percentage=0.7,
+                )
+                if grid_type == GridType.BBOX
+                else GridFeature.init().get_annotation_grid(
+                    wsi_path=str(wsi_path),
+                    wsa_path=str(wsa_path),
+                    level=0,
+                    patch_size={"pixel": (256, 256)},
+                    overlap=64,
+                )
             )
         )

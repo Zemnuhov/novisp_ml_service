@@ -55,7 +55,6 @@ class ImagePredictor(Predictor):
         Feature.init().patches_to_geojson(
             segmentation_predict, segmentation_data_builder.grid, str(img_path.parent)
         )
-
         invasion_data_builder = ImageDataBuilder(
             img_path,
             grid_type=GridType.ANNOTATION,
@@ -63,29 +62,33 @@ class ImagePredictor(Predictor):
             wsa_path=str(img_path.parent / "annotation.geojson"),
             is_fill_without_mask=True,
         )
-
-        invasion_predict = torch_predict(
-            model=self.invasion_model,
-            data=invasion_data_builder.build(),
-            accelerator=self.device,
-            binary_threshold=0.995,
-        )
-        invasion_predict = InvasionSegmentationPostprocess().execute(
-            invasion_predict, invasion_data_builder.grid
-        )
-        Feature.init().patches_to_geojson(
-            invasion_predict,
-            invasion_data_builder.grid,
-            str(img_path.parent),
-            file_name="invasion",
-        )
-        Feature.init().combine_prediction_results(
-            segmentation_geojson_path=str(img_path.parent / "annotation.geojson"),
-            classification_geojson_path=str(img_path.parent / "invasion.geojson"),
-            classification_annotation_type=["Invasion"],
-            save_path=str(img_path.parent),
-        )
-        poly = Feature.init().get_polygons_from_wsa(
-            str(img_path.parent / "combine_prediction.geojson")
-        )
+        if len(invasion_data_builder) > 0:
+            invasion_predict = torch_predict(
+                model=self.invasion_model,
+                data=invasion_data_builder.build(),
+                accelerator=self.device,
+                binary_threshold=0.995,
+            )
+            invasion_predict = InvasionSegmentationPostprocess().execute(
+                invasion_predict, invasion_data_builder.grid
+            )
+            Feature.init().patches_to_geojson(
+                invasion_predict,
+                invasion_data_builder.grid,
+                str(img_path.parent),
+                file_name="invasion",
+            )
+            Feature.init().combine_prediction_results(
+                segmentation_geojson_path=str(img_path.parent / "annotation.geojson"),
+                classification_geojson_path=str(img_path.parent / "invasion.geojson"),
+                classification_annotation_type=["Invasion"],
+                save_path=str(img_path.parent),
+            )
+            poly = Feature.init().get_polygons_from_wsa(
+                str(img_path.parent / "combine_prediction.geojson")
+            )
+        else:
+            poly = Feature.init().get_polygons_from_wsa(
+                str(img_path.parent / "annotation.geojson")
+            )
         return poly

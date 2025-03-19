@@ -48,15 +48,6 @@ class SegmentationPostprocess(Postprocess):
             patch.mask = feature.correct_mask(pred) if is_postprocess_mask else pred
         return patches
 
-    def cuda_resize(self, pred, patch):
-        pred = pred.unsqueeze(0)
-        pred = torchvision.transforms.Resize(
-            [patch.size.height, patch.size.width],
-            interpolation=InterpolationMode.NEAREST,
-        )(pred)
-        pred = pred.squeeze()
-        return (pred.to(torch.uint8)).to("cpu", non_blocking=True).numpy()
-
     def cpu_resize(self, pred, patch):
         pred = (pred.to(torch.uint8)).to("cpu", non_blocking=True).numpy()
         pred = pred.squeeze(0) if len(pred.shape) == 3 else pred
@@ -104,15 +95,6 @@ class InvasionSegmentationPostprocess(Postprocess):
             ).inverse_transform(pred)
             patch.mask = feature.correct_mask(pred) if is_postprocess_mask else pred
         return patches
-
-    def cuda_resize(self, pred, patch):
-        pred = pred.unsqueeze(0)
-        pred = torchvision.transforms.Resize(
-            [patch.size.height, patch.size.width],
-            interpolation=InterpolationMode.NEAREST,
-        )(pred)
-        pred = pred.squeeze()
-        return (pred.to(torch.uint8)).to("cpu", non_blocking=True).numpy()
 
     def cpu_resize(self, pred, patch):
         pred = (pred.to(torch.uint8)).to("cpu", non_blocking=True).numpy()
