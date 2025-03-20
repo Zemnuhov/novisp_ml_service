@@ -15,7 +15,7 @@ from histoprocess.filters import PolygonAreaFilter, NormalizedPolygonAreaFilter
 from src.model.pydentic_models import PydenticPolygons
 from src.predictors.image_predictor import ImagePredictor
 from src.predictors.slide_predictor import SlidePredictor
-from src.utils import download_file
+from src.utils import download_file, download_google_drive_file
 from nc_py_api import Nextcloud
 
 
@@ -112,9 +112,14 @@ class NovispMlService:
 
     async def handle_direct_link(self, file: str):
         slide_name = Path(file).stem
-        wsi_path = await asyncio.to_thread(
-            download_file, file, self.logs_dir / "slides" / slide_name
-        )
+        if "nextcloud" in file:
+            wsi_path = await asyncio.to_thread(
+                download_file, file, self.logs_dir / "slides" / slide_name
+            )
+        else:
+            wsi_path = await asyncio.to_thread(
+                download_google_drive_file, file, self.logs_dir / "slides"
+            )
         return await self._predict_slide(wsi_path)
 
     async def image_predict(self, file: UploadFile = File(...)):

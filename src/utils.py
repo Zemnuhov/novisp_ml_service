@@ -6,6 +6,8 @@ from histoprocess._domain.model.polygon import Polygons
 import numpy as np
 import requests
 import tqdm
+import gdown
+import html
 
 
 def draw_contours(annotations: Polygons, image: np.ndarray):
@@ -66,3 +68,71 @@ def download_file(url: str, path: Path) -> Path:
                 size = file.write(data)
                 bar.update(size)
     return save_path
+
+
+def extract_file_id(google_drive_url):
+    """Извлекает file_id из различных форматов ссылок"""
+    patterns = [
+        r"id=([a-zA-Z0-9_-]+)",  # Для ссылок вида https://drive.google.com/uc?export=download&id=...
+        r"/d/([a-zA-Z0-9_-]+)",  # Для ссылок вида https://drive.google.com/file/d/...
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, google_drive_url)
+        if match:
+            return match.group(1)
+    return None
+
+
+def get_filename_from_content(response_content):
+    """Извлекает имя файла из HTML-ответа Google Drive"""
+    match = re.search(r"<a href=.*?>([^<]+)</a>", response_content.decode("utf-8"))
+    if match:
+        return html.unescape(
+            match.group(1)
+        )  # Декодируем HTML-сущности (например, `&amp;` → `&`)
+    return None
+
+
+def get_filename_from_shared_link(shared_link):
+    """Получает имя файла по shared link без API"""
+    file_id = extract_file_id(shared_link)
+    if not file_id:
+        print("Ошибка: Не удалось извлечь file_id.")
+        return None
+
+    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+    try:
+        response = requests.get(download_url, stream=True, allow_redirects=True)
+        file_name = get_filename_from_content(response.content)
+        return file_name if file_name else None
+    except requests.RequestException as e:
+        print(f"Ошибка при получении данных: {e}")
+        return None
+
+
+def get_filename_from_id(file_id):
+    """Получает имя файла по file_id"""
+    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+    try:
+        response = requests.get(download_url, stream=True, allow_redirects=True)
+        file_name = get_filename_from_content(response.content)
+        return file_name if file_name else None
+    except requests.RequestException as e:
+        print(f"Ошибка при получении данных: {e}")
+        return None
+
+
+def download_google_drive_file(shared_link, path: Path):
+    """Скачивает файл с правильным именем"""
+    file_id = extract_file_id(shared_link)
+    if not file_id:
+        print("Ошибка: file_id не найден.")
+        return
+    file_name = get_filename_from_shared_link(shared_link)
+    file_path = path / Path(file_name).stem / file_name
+    output_path = gdown.download(
+        f"https://drive.google.com/uc?id={file_id}", str(file_path), quiet=False, fuzzy=True
+    )
+    return Path(output_path)

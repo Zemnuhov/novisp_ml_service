@@ -47,7 +47,7 @@ class SlideDataBuilder(DataBuilder):
     def build(self):
         return DataLoader(
             dataset=self.dataset,
-            num_workers=10,
+            num_workers=2,
             batch_size=2,
             pin_memory=True,
             prefetch_factor=5,
